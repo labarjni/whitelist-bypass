@@ -2,7 +2,8 @@
 set -e
 
 export ANDROID_HOME="$HOME/Library/Android/sdk"
-export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/29.0.14206865"
+export CGO_LDFLAGS="-Wl,-z,max-page-size=16384"
 export PATH="$PATH:/opt/homebrew/bin:$HOME/go/bin"
 
 # Check deps

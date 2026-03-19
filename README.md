@@ -95,5 +95,5 @@ go build -o relay .
 - Go 1.21+
 - gomobile (`go install golang.org/x/mobile/cmd/gomobile@latest`)
 - gobind (`go install golang.org/x/mobile/cmd/gobind@latest`)
-- Android SDK + NDK 27
+- Android SDK + NDK 28+
 - Java 11+
