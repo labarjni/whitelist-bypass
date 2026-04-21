@@ -1,7 +1,36 @@
-.DS_Store
-relay/mobile.aar
-relay/relay-*
-prebuilts/
-cookies*.json
-relay/relay
-whitelist-experiments/
+```
+# Compiled and build artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Dependencies
+vendor/
+_third_party/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+build/
+dist/
+target/
+```
