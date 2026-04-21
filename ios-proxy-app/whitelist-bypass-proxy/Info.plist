@@ -8,5 +8,7 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app uses local network to create a VPN tunnel for routing traffic through the proxy.</string>
 </dict>
 </plist>

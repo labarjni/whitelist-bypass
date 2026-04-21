@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import Combine
 import Mobile
+import NetworkExtension
 
 
 enum ProxyStatus: String {
@@ -21,6 +22,121 @@ enum ProxyStatus: String {
         case .tunnelLost: return NSLocalizedString("status_tunnel_lost", comment: "")
         case .error: return NSLocalizedString("status_error", comment: "")
         }
+    }
+}
+
+class VPNManager: ObservableObject {
+    @Published var isVPNEnabled = false
+    @Published var vpnStatus: NEVPNStatus = .invalid
+    @Published var vpnError: String?
+    
+    private let vpnManager = NEVPNManager.shared()
+    private var observer: NSObjectProtocol?
+    
+    init() {
+        setupObserver()
+        loadVPNConfiguration()
+    }
+    
+    deinit {
+        if let observer = observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+    
+    private func setupObserver() {
+        observer = NotificationCenter.default.addObserver(
+            forName: .NEVPNStatusDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let connection = notification.object as? NEVPNConnection else { return }
+            DispatchQueue.main.async {
+                self?.vpnStatus = connection.status
+                self?.updateVPNStatus()
+            }
+        }
+    }
+    
+    private func updateVPNStatus() {
+        switch vpnStatus {
+        case .connected:
+            isVPNEnabled = true
+            vpnError = nil
+        case .disconnected, .invalid:
+            isVPNEnabled = false
+            vpnError = nil
+        case .connecting:
+            isVPNEnabled = false
+        case .disconnecting:
+            isVPNEnabled = false
+        case .reasserting:
+            break
+        @unknown default:
+            break
+        }
+    }
+    
+    private func loadVPNConfiguration() {
+        vpnManager.loadFromPreferences { error in
+            if let error = error {
+                self.vpnError = "Failed to load VPN config: \(error.localizedDescription)"
+                return
+            }
+            self.isVPNEnabled = self.vpnManager.isEnabled
+            if let connection = self.vpnManager.connection as? NEVPNConnection {
+                self.vpnStatus = connection.status
+            }
+        }
+    }
+    
+    func enableVPN(socksPort: Int, socksUser: String, socksPass: String, mtu: Int = 1500) async throws {
+        vpnManager.protocolConfiguration = createVPNProtocol(socksPort: socksPort, socksUser: socksUser, socksPass: socksPass, mtu: mtu)
+        vpnManager.isEnabled = true
+        
+        try await vpnManager.saveToPreferences()
+        
+        // Wait a bit for save to complete
+        try await Task.sleep(nanoseconds: 500_000_000)
+        
+        // Reload to ensure we have the saved config
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            vpnManager.loadFromPreferences { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+        
+        // Start the VPN connection
+        do {
+            try vpnManager.connection.startVPNTunnel(options: [
+                "socksPort": NSNumber(value: socksPort),
+                "socksUser": socksUser,
+                "socksPass": socksPass,
+                "mtu": NSNumber(value: mtu)
+            ])
+        } catch {
+            vpnError = "Failed to start VPN: \(error.localizedDescription)"
+            throw error
+        }
+    }
+    
+    func disableVPN() {
+        vpnManager.connection.stopVPNTunnel()
+    }
+    
+    private func createVPNProtocol(socksPort: Int, socksUser: String, socksPass: String, mtu: Int) -> NEPacketTunnelProtocol {
+        let protocolConfig = NEPacketTunnelProviderSettings(providerBundleIdentifier: "bypass.whitelist.whitelist-bypass-proxy.PacketTunnelProvider")
+        protocolConfig.providerConfiguration = [
+            "socksPort": socksPort,
+            "socksUser": socksUser,
+            "socksPass": socksPass,
+            "mtu": mtu
+        ]
+        return protocolConfig
     }
 }
 
@@ -133,6 +249,7 @@ class ProxyManager: ObservableObject {
     @Published var isRunning: Bool = false
     @Published var toastMessage: String?
     @Published var statusText: String?
+    @Published var useVPNMode: Bool = AppDefaults.useVPNMode { didSet { AppDefaults.useVPNMode = useVPNMode } }
     var detectedPlatform: CallPlatform = .vk
 
     @Published var callUrl: String = AppDefaults.lastUrl { didSet { AppDefaults.lastUrl = callUrl } }
@@ -148,6 +265,7 @@ class ProxyManager: ObservableObject {
     private let autoSocksPass: String
     private var callbackBridge: HeadlessCallbackBridge?
     private let backgroundKeepAlive = BackgroundKeepAlive()
+    private let vpnManager = VPNManager()
 
     private var pendingLogs: [String] = []
     private var logFlushScheduled = false
@@ -260,6 +378,18 @@ class ProxyManager: ObservableObject {
             showToast(NSLocalizedString("dc_mode_not_supported", comment: ""))
         }
 
+        // Start VPN tunnel if enabled
+        if useVPNMode {
+            startVPNWithHeadless(bridge: bridge)
+        } else {
+            startHeadlessOnly(bridge: bridge)
+        }
+    }
+    
+    private func startVPNWithHeadless(bridge: HeadlessCallbackBridge) {
+        appendLog("Starting in VPN mode (tun2socks)")
+        
+        // First start the headless joiner to create SOCKS5 server
         switch detectedPlatform {
         case .telemost:
             IosStartTelemostHeadless(socksPort, activeSocksUser, activeSocksPass, bridge)
@@ -273,7 +403,47 @@ class ProxyManager: ObservableObject {
                 IosSendJoinParams(jsonString)
                 appendLog("Sent join params")
             }
-
+        case .vk:
+            IosStartVKHeadless(socksPort, activeSocksUser, activeSocksPass, callUrl, displayName, tunnelMode.rawValue, bridge)
+            appendLog("Started VK headless joiner")
+        }
+        
+        // Then enable VPN tunnel which will route all traffic through tun2socks -> SOCKS5
+        Task {
+            do {
+                try await vpnManager.enableVPN(
+                    socksPort: socksPort,
+                    socksUser: activeSocksUser,
+                    socksPass: activeSocksPass,
+                    mtu: 1500
+                )
+                appendLog("VPN tunnel enabled")
+            } catch {
+                appendLog("Failed to enable VPN: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.errorMessage = "VPN failed: \(error.localizedDescription)"
+                    self.status = .error
+                }
+            }
+        }
+    }
+    
+    private func startHeadlessOnly(bridge: HeadlessCallbackBridge) {
+        appendLog("Starting in proxy-only mode (SOCKS5 on localhost)")
+        
+        switch detectedPlatform {
+        case .telemost:
+            IosStartTelemostHeadless(socksPort, activeSocksUser, activeSocksPass, bridge)
+            appendLog("Started Telemost headless joiner")
+            let joinParams: [String: String] = [
+                "joinLink": callUrl,
+                "displayName": displayName,
+            ]
+            if let jsonData = try? JSONSerialization.data(withJSONObject: joinParams),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                IosSendJoinParams(jsonString)
+                appendLog("Sent join params")
+            }
         case .vk:
             IosStartVKHeadless(socksPort, activeSocksUser, activeSocksPass, callUrl, displayName, tunnelMode.rawValue, bridge)
             appendLog("Started VK headless joiner")
@@ -281,6 +451,12 @@ class ProxyManager: ObservableObject {
     }
 
     func disconnect() {
+        // Stop VPN if enabled
+        if useVPNMode {
+            vpnManager.disableVPN()
+            appendLog("VPN tunnel disabled")
+        }
+        
         callbackBridge?.manager = nil
         callbackBridge = nil
         IosStopCaptchaProxy()

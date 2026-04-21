@@ -1,7 +1,35 @@
-.DS_Store
-relay/mobile.aar
-relay/relay-*
-prebuilts/
-cookies*.json
-relay/relay
-whitelist-experiments/
+```
+# iOS build artifacts
+build/
+*.ipa
+*.app
+*.xcarchive
+*.dSYM/
+
+# Xcode files
+*.xcodeproj/
+*.xcworkspace/
+*.pbxuser
+*.mode1v3
+*.perspectivev3
+*.xcuserstate
+*.xccheckout
+
+# Swift build
+.derivedData/
+DerivedData/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Dependencies
+Pods/
+Carthage/
+```
