@@ -1,36 +1,35 @@
 ```
-# Compiled and build artifacts
-*.o
-*.obj
-*.a
-*.so
-*.dylib
-*.dll
-*.exe
-*.out
+# iOS build artifacts
+build/
+*.ipa
+*.app
+*.xcarchive
+*.dSYM/
 
-# Dependencies
-vendor/
-_third_party/
+# Xcode files
+*.xcodeproj/
+*.xcworkspace/
+*.pbxuser
+*.mode1v3
+*.perspectivev3
+*.xcuserstate
+*.xccheckout
 
-# Logs and temp files
-*.log
+# Swift build
+.derivedData/
+DerivedData/
+
+# Temporary files
 *.tmp
+*.log
 *.swp
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Build outputs
-build/
-dist/
-target/
+# Dependencies
+Pods/
+Carthage/
 ```

@@ -9,6 +9,7 @@ enum DefaultsKeys {
     static let socksAuthMode = "socksAuthMode"
     static let socksUser = "socksUser"
     static let socksPass = "socksPass"
+    static let useVPNMode = "useVPNMode"
 }
 
 struct AppDefaults {
@@ -52,5 +53,10 @@ struct AppDefaults {
     static var socksPass: String {
         get { defaults.string(forKey: DefaultsKeys.socksPass) ?? "" }
         set { defaults.set(newValue, forKey: DefaultsKeys.socksPass) }
+    }
+    
+    static var useVPNMode: Bool {
+        get { defaults.object(forKey: DefaultsKeys.useVPNMode) as? Bool ?? false }
+        set { defaults.set(newValue, forKey: DefaultsKeys.useVPNMode) }
     }
 }
