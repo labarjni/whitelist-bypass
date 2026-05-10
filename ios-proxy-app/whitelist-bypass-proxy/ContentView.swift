@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var proxyManager: ProxyManager
     @State private var showSettings = false
+    @State private var showMaxAuth = false
 
     var body: some View {
         NavigationView {
@@ -40,6 +41,15 @@ struct ContentView: View {
                         .buttonStyle(.borderedProminent)
                         .tint(proxyManager.isRunning ? .red : .green)
                     }
+                    .padding(.horizontal)
+
+                    // MAX.ru Authorization Button
+                    Button(action: { showMaxAuth = true }) {
+                        Label("Authorize with MAX", systemImage: "person.crop.circle.badge.checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
                     .padding(.horizontal)
 
                     if let captchaURL = proxyManager.captchaURL, let url = URL(string: captchaURL) {
@@ -107,6 +117,12 @@ struct ContentView: View {
         }
         .onTapGesture {
             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        .sheet(isPresented: $showMaxAuth) {
+            MaxAuthSheet(onComplete: { conferenceId in
+                proxyManager.callUrl = "max://\(conferenceId)"
+                proxyManager.showToast("Conference ID: \(conferenceId)")
+            })
         }
     }
 }
