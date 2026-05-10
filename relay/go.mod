@@ -1,6 +1,6 @@
 module whitelist-bypass/relay
 
-go 1.26.1
+go 1.19
 
 require (
 	github.com/ajg/form v1.5.1 // indirect

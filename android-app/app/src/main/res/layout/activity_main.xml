@@ -55,6 +55,17 @@
             app:tint="#888888" />
     </LinearLayout>
 
+    <!-- MAX.ru Authorization Button -->
+    <Button
+        android:id="@+id/maxAuthButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:text="Authorize with MAX"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FF9800" />
+
     <TextView
         android:id="@+id/statusBar"
         android:layout_width="match_parent"

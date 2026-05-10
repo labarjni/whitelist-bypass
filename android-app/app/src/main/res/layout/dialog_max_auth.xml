@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Paste LocalStorage JSON from web.max.ru"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/cookiesInput"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:hint="LocalStorage JSON"
+        android:inputType="textMultiLine"
+        android:gravity="top|start"
+        android:typeface="monospace"
+        android:textSize="11sp"
+        android:background="@android:drawable/edit_text"
+        android:padding="8dp" />
+
+    <TextView
+        android:id="@+id/resultText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="14sp"
+        android:textColor="#4CAF50"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/errorText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="14sp"
+        android:textColor="#F44336"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/createCallButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Create Call"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#FF9800" />
+
+</LinearLayout>

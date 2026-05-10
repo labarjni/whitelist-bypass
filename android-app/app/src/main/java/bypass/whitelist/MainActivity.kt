@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity(), SettingsDialogFragment.Listener, JoinF
     private val logWriter by lazy { LogWriter(cacheDir) }
 
     private lateinit var urlInput: EditText
+    private lateinit var maxAuthButton: Button
     private lateinit var logCtrl: LogViewController
     private lateinit var statusCtrl: StatusBarController
     private lateinit var logContainer: View
@@ -91,6 +92,7 @@ class MainActivity : AppCompatActivity(), SettingsDialogFragment.Listener, JoinF
             SettingsDialogFragment().show(supportFragmentManager, SettingsDialogFragment.TAG)
         }
         findViewById<View>(R.id.clearButton).setOnClickListener { urlInput.setText("") }
+        findViewById<Button>(R.id.maxAuthButton).setOnClickListener { showMaxAuthDialog() }
 
         TunnelVpnService.onDisconnect = { runOnUiThread { resetState() } }
         ProxyService.onDisconnect = { runOnUiThread { resetState() } }
@@ -219,6 +221,10 @@ class MainActivity : AppCompatActivity(), SettingsDialogFragment.Listener, JoinF
         resetState()
         TunnelVpnService.instance?.stop()
         ProxyService.instance?.stop()
+    }
+
+    private fun showMaxAuthDialog() {
+        MaxAuthDialogFragment().show(supportFragmentManager, "max_auth")
     }
 
     private fun removeJoinFragment() {
